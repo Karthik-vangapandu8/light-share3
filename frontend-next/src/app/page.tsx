@@ -20,7 +20,11 @@ export default function Home() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/upload`, formData, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      const response = await axios({
+        method: 'post',
+        url: `${apiUrl}/upload`,
+        data: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -50,7 +54,11 @@ export default function Home() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/upload`, formData, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      const response = await axios({
+        method: 'post',
+        url: `${apiUrl}/upload`,
+        data: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -64,7 +72,7 @@ export default function Home() {
       });
 
       if (response.data.success) {
-        const fullShareableLink = `${process.env.NEXT_PUBLIC_API_URL}${response.data.shareableLink}`;
+        const fullShareableLink = `${apiUrl}${response.data.shareableLink}`;
         setShareLink(fullShareableLink);
         setQrCodeData(fullShareableLink);
       } else {
@@ -72,7 +80,11 @@ export default function Home() {
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      setUploadError(error.response?.data?.error || 'Failed to upload file. Please try again.');
+      setUploadError(
+        error.response?.data?.error || 
+        error.message || 
+        'Failed to upload file. Please try again.'
+      );
     } finally {
       setIsUploading(false);
       setUploadProgress(0);

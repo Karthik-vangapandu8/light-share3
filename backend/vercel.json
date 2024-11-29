@@ -8,6 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/upload",
+      "methods": ["POST", "OPTIONS"],
+      "dest": "/server.js"
+    },
+    {
+      "src": "/download/(.*)",
+      "methods": ["GET"],
+      "dest": "/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/server.js"
     }
