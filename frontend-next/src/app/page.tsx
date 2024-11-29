@@ -40,6 +40,8 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log('Uploading file:', file.name, 'Size:', file.size);
+
       // Split the upload process into chunks
       const chunkSize = 1024 * 1024; // 1MB chunks
       const chunks = Math.ceil(file.size / chunkSize);
@@ -57,25 +59,35 @@ export default function Home() {
             if (progressEvent.total) {
               const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
               setUploadProgress(progress);
+              console.log('Upload progress:', progress + '%');
             }
           });
         },
       });
+
+      console.log('Upload response:', response.data);
 
       if (response.data.success) {
         // Use requestAnimationFrame for UI updates
         requestAnimationFrame(() => {
           const backendUrl = 'https://qr-share-two.vercel.app';
           const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
+          console.log('Generated shareable link:', fullShareableLink);
           setShareLink(fullShareableLink);
           setQrCodeData(fullShareableLink);
           setShowSuccess(true);
         });
       } else {
+        console.error('Upload failed:', response.data.error);
         setUploadError(response.data.error || 'Upload failed. Please try again.');
       }
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error('Upload error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
       setUploadError(
         error.response?.data?.error || 
         error.message || 
