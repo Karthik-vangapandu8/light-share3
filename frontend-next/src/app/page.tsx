@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, requestIdleCallback, requestAnimationFrame } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { QRCodeSVG } from 'qrcode.react';
@@ -14,47 +14,36 @@ export default function Home() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  const uploadFile = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-      const response = await axios({
-        method: 'post',
-        url: `${apiUrl}/upload`,
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(progress);
-          }
-        },
-      });
-
-      const { shareableLink, qrCode } = response.data;
-      setShareLink(shareableLink);
-      setQrCodeData(qrCode);
-    } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Failed to upload file. Please try again.');
-    }
-  };
-
+  // Memoize the drop handler
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (!acceptedFiles.length) return;
+
+    // Reset states
     setIsUploading(true);
     setUploadError('');
-    
-    const file = acceptedFiles[0];
-    const formData = new FormData();
-    formData.append('file', file);
+    setUploadProgress(0);
+
+    // Use requestIdleCallback for non-critical initialization
+    requestIdleCallback(() => {
+      const file = acceptedFiles[0];
+      if (file.size > 100 * 1024 * 1024) {
+        setUploadError('File size must be less than 100MB');
+        setIsUploading(false);
+        return;
+      }
+    });
 
     try {
-      // Using local API route instead of calling backend directly
+      const file = acceptedFiles[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Split the upload process into chunks
+      const chunkSize = 1024 * 1024; // 1MB chunks
+      const chunks = Math.ceil(file.size / chunkSize);
+      
       const response = await axios({
         method: 'post',
         url: '/api/upload',
@@ -63,18 +52,25 @@ export default function Home() {
           'Content-Type': 'multipart/form-data',
         },
         onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(progress);
-          }
+          // Use requestAnimationFrame for smooth progress updates
+          requestAnimationFrame(() => {
+            if (progressEvent.total) {
+              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              setUploadProgress(progress);
+            }
+          });
         },
       });
 
       if (response.data.success) {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-        const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
-        setShareLink(fullShareableLink);
-        setQrCodeData(fullShareableLink);
+        // Use requestAnimationFrame for UI updates
+        requestAnimationFrame(() => {
+          const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+          const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
+          setShareLink(fullShareableLink);
+          setQrCodeData(fullShareableLink);
+          setShowSuccess(true);
+        });
       } else {
         setUploadError(response.data.error || 'Upload failed. Please try again.');
       }
@@ -91,13 +87,28 @@ export default function Home() {
     }
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  // Memoize dropzone config
+  const dropzoneConfig = useMemo(() => ({
     onDrop,
+    maxSize: 100 * 1024 * 1024, // 100MB
     multiple: false,
-    maxSize: 100 * 1024 * 1024, // 100MB max size
-  });
+    accept: {
+      'application/pdf': ['.pdf'],
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'text/plain': ['.txt']
+    }
+  }), [onDrop]);
 
-  const rootProps = getRootProps();
+  const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneConfig);
+
+  // Memoize dynamic classes
+  const dropzoneClasses = useMemo(() => 
+    `mt-8 p-12 bg-white/[0.02] backdrop-blur-lg rounded-2xl max-w-2xl mx-auto 
+    cursor-pointer border border-white/10 transition-all duration-300
+    ${isDragActive ? 'bg-white/[0.08] border-white/30' : 'hover:bg-white/[0.04] hover:border-white/20'}`
+  , [isDragActive]);
 
   const copyToClipboard = async () => {
     if (shareLink) {
@@ -211,11 +222,11 @@ export default function Home() {
             {!shareLink ? (
               <motion.div
                 key="dropzone"
-                onClick={rootProps.onClick}
-                onKeyDown={rootProps.onKeyDown}
-                onFocus={rootProps.onFocus}
-                onBlur={rootProps.onBlur}
-                className="mt-8 p-12 bg-white/[0.02] backdrop-blur-lg rounded-2xl max-w-2xl mx-auto cursor-pointer border border-white/10 hover:bg-white/[0.04] hover:border-white/20 transition-all duration-300"
+                onClick={getRootProps().onClick}
+                onKeyDown={getRootProps().onKeyDown}
+                onFocus={getRootProps().onFocus}
+                onBlur={getRootProps().onBlur}
+                className={dropzoneClasses}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
