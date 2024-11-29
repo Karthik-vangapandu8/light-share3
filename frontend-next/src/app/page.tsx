@@ -42,7 +42,7 @@ export default function Home() {
       setUploadError('');
 
       // Upload directly to backend
-      const backendUrl = 'https://qr-share-two.vercel.app/upload';
+      const backendUrl = 'https://qr-share-two.vercel.app/api/upload';
       const formData = new FormData();
       formData.append('file', file);
 
@@ -70,9 +70,9 @@ export default function Home() {
       }
 
       if (data.success) {
-        const fullShareableLink = `${backendUrl}${data.shareableLink}`;
-        setShareLink(fullShareableLink);
-        setQrCodeData(fullShareableLink);
+        const downloadUrl = `https://qr-share-two.vercel.app/api/download/${data.fileId}`;
+        setShareLink(downloadUrl);
+        setQrCodeData(downloadUrl);
         setShowSuccess(true);
       } else {
         throw new Error(data.error || 'Upload failed');
