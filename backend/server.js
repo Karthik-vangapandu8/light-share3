@@ -7,23 +7,20 @@ const path = require('path');
 const app = express();
 
 // Configure CORS
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'https://light-share3-iqr8.vercel.app',
-  'https://light-share3-git-main-karthik-vangapandu8.vercel.app',
-  'https://light-share3-karthik-vangapandu8.vercel.app'
-];
-
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(null, false);
+    // Allow localhost and all Vercel domains
+    if (
+      origin.startsWith('http://localhost:') ||
+      origin.includes('vercel.app')
+    ) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    
+    return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept'],

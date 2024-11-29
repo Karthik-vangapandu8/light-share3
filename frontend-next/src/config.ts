@@ -9,4 +9,7 @@ const config: Config = {
       : 'http://localhost:3001')
 };
 
+// Remove any query parameters from the backend URL
+config.backendUrl = config.backendUrl.split('?')[0];
+
 export default config;
