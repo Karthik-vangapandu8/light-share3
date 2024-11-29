@@ -1,59 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { config } from './config';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export { config };
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if the request has the correct content type
-    const contentType = request.headers.get('content-type');
-    if (!contentType || !contentType.includes('multipart/form-data')) {
-      return NextResponse.json(
-        { error: 'Content type must be multipart/form-data' },
-        { status: 400 }
-      );
-    }
+    // Log request details
+    console.log('Received upload request');
+    console.log('Content-Type:', request.headers.get('content-type'));
 
-    // Get the form data
+    // Get form data
     const formData = await request.formData();
     const file = formData.get('file');
 
     if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Create a new FormData for the backend request
+    // Log file details
+    console.log('File received:', {
+      type: file.type,
+      size: file.size,
+      name: (file as File).name
+    });
+
+    // Create new FormData for backend request
     const backendFormData = new FormData();
     backendFormData.append('file', file);
 
-    // Make the request to the backend
-    const backendUrl = 'https://qr-share-two.vercel.app/upload';
-    console.log('Sending request to backend:', backendUrl);
-
-    const backendResponse = await fetch(backendUrl, {
+    // Make request to backend
+    const backendResponse = await fetch('https://qr-share-two.vercel.app/upload', {
       method: 'POST',
       body: backendFormData,
     });
 
-    if (!backendResponse.ok) {
-      const errorText = await backendResponse.text();
-      console.error('Backend error:', errorText);
+    // Log backend response status
+    console.log('Backend response status:', backendResponse.status);
+
+    // Get response text first
+    const responseText = await backendResponse.text();
+    console.log('Backend response text:', responseText);
+
+    // Try to parse as JSON
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Failed to parse backend response:', e);
       return NextResponse.json(
-        { error: 'Backend upload failed' },
+        { error: 'Invalid response from backend' },
+        { status: 500 }
+      );
+    }
+
+    if (!backendResponse.ok) {
+      return NextResponse.json(
+        { error: responseData.error || 'Backend upload failed' },
         { status: backendResponse.status }
       );
     }
 
-    const responseData = await backendResponse.json();
     return NextResponse.json(responseData);
   } catch (error: any) {
-    console.error('Upload error:', error);
+    // Log the full error
+    console.error('Upload error:', {
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
+
     return NextResponse.json(
       { error: 'Upload failed: ' + error.message },
       { status: 500 }

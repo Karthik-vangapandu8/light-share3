@@ -38,57 +38,60 @@ export default function Home() {
         return;
       }
 
+      console.log('Starting file upload:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+
       const formData = new FormData();
       formData.append('file', file);
 
-      // First test if the API is accessible
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('Upload response status:', response.status);
+      
+      const responseText = await response.text();
+      console.log('Response text:', responseText);
+
+      let data;
       try {
-        const testResponse = await fetch('/api/test');
-        if (!testResponse.ok) {
-          throw new Error('API test failed');
-        }
-        console.log('API test successful');
-      } catch (error) {
-        console.error('API test failed:', error);
-        setUploadError('API is not accessible. Please try again later.');
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        setUploadError('Invalid response from server');
         return;
       }
 
-      const response = await axios.post('/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setUploadProgress(progress);
-          }
-        },
-      });
+      if (!response.ok) {
+        console.error('Upload failed:', data);
+        setUploadError(data.error || 'Upload failed. Please try again.');
+        return;
+      }
 
-      console.log('Upload response:', response.data);
+      console.log('Upload successful:', data);
 
-      if (response.data.success) {
+      if (data.success) {
         const backendUrl = 'https://qr-share-two.vercel.app';
-        const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
+        const fullShareableLink = `${backendUrl}${data.shareableLink}`;
+        console.log('Generated link:', fullShareableLink);
         setShareLink(fullShareableLink);
         setQrCodeData(fullShareableLink);
         setShowSuccess(true);
       } else {
-        setUploadError(response.data.error || 'Upload failed. Please try again.');
+        setUploadError(data.error || 'Upload failed. Please try again.');
       }
     } catch (error: any) {
-      console.error('Upload error details:', {
+      console.error('Upload error:', {
         message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
+        cause: error.cause,
+        stack: error.stack
       });
       
-      setUploadError(
-        error.response?.data?.error || 
-        error.message || 
-        'Failed to upload file. Please try again.'
-      );
+      setUploadError('Failed to upload file. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
