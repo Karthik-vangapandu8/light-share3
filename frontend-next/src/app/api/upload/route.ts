@@ -1,60 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
-export const runtime = 'edge';
+// Simple in-memory storage
+const FILES = new Map();
 
-// Store files in a global object
-const FILES = {};
+export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Received upload request');
+    // Log the request
+    console.log('Upload request received');
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    // Get the form data
+    const data = await request.formData();
+    const file = data.get('file');
 
-    if (!file) {
-      console.log('No file provided');
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      );
+    // Validate file
+    if (!file || !(file instanceof File)) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    console.log('File details:', {
+    // Log file details
+    console.log('File received:', {
       name: file.name,
-      size: file.size,
-      type: file.type
+      type: file.type,
+      size: file.size
     });
 
-    // Generate a unique ID for the file
-    const fileId = uuidv4();
-    const expiryTime = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    // Read file as array buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    // Convert file to array buffer
-    const arrayBuffer = await file.arrayBuffer();
+    // Generate unique ID
+    const fileId = uuidv4();
 
     // Store file data
-    FILES[fileId] = {
-      data: arrayBuffer,
-      originalName: file.name,
-      mimetype: file.type,
+    FILES.set(fileId, {
+      name: file.name,
+      type: file.type,
       size: file.size,
-      expiryTime
-    };
+      data: buffer,
+      createdAt: Date.now()
+    });
 
+    // Log success
     console.log('File stored with ID:', fileId);
 
+    // Return success response
     return NextResponse.json({
       success: true,
       fileId,
-      originalName: file.name,
-      size: file.size
+      name: file.name
     });
-  } catch (error: any) {
+
+  } catch (error) {
+    // Log error
     console.error('Upload error:', error);
+    
+    // Return error response
     return NextResponse.json(
-      { error: 'Upload failed: ' + error.message },
+      { error: 'Upload failed: ' + (error as Error).message },
       { status: 500 }
     );
   }

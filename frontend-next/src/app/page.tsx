@@ -41,26 +41,47 @@ export default function Home() {
       setIsUploading(true);
       setUploadError('');
 
+      // Create form data
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        }
+      // Log the request
+      console.log('Sending file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
       });
 
-      const data = await response.json();
-      console.log('Upload response:', data);
+      // Make the request
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
 
+      // Log the response status
+      console.log('Response status:', response.status);
+
+      // Get the response data
+      const text = await response.text();
+      console.log('Response text:', text);
+
+      // Parse the response
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        throw new Error('Invalid server response');
+      }
+
+      // Check for errors
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
       }
 
+      // Handle success
       if (data.success) {
-        const downloadUrl = `${window.location.origin}/api/download/${data.fileId}`;
+        const downloadUrl = `/api/download/${data.fileId}`;
         setShareLink(downloadUrl);
         setQrCodeData(downloadUrl);
         setShowSuccess(true);
