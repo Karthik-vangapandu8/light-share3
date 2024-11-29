@@ -41,6 +41,19 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', file);
 
+      // First test if the API is accessible
+      try {
+        const testResponse = await fetch('/api/test');
+        if (!testResponse.ok) {
+          throw new Error('API test failed');
+        }
+        console.log('API test successful');
+      } catch (error) {
+        console.error('API test failed:', error);
+        setUploadError('API is not accessible. Please try again later.');
+        return;
+      }
+
       const response = await axios.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -53,6 +66,8 @@ export default function Home() {
         },
       });
 
+      console.log('Upload response:', response.data);
+
       if (response.data.success) {
         const backendUrl = 'https://qr-share-two.vercel.app';
         const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
@@ -63,7 +78,12 @@ export default function Home() {
         setUploadError(response.data.error || 'Upload failed. Please try again.');
       }
     } catch (error: any) {
-      console.error('Upload error:', error.response?.data || error);
+      console.error('Upload error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
       setUploadError(
         error.response?.data?.error || 
         error.message || 

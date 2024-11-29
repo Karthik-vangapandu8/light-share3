@@ -1,54 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = 'https://qr-share-two.vercel.app';
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-export const runtime = 'edge';
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    
-    if (!file) {
+    // Check if the request has the correct content type
+    const contentType = request.headers.get('content-type');
+    if (!contentType || !contentType.includes('multipart/form-data')) {
       return NextResponse.json(
-        { error: 'No file uploaded' },
+        { error: 'Content type must be multipart/form-data' },
         { status: 400 }
       );
     }
 
-    // Create a new FormData instance
-    const newFormData = new FormData();
-    newFormData.append('file', file);
+    // Get the form data
+    const formData = await request.formData();
+    const file = formData.get('file');
 
-    const response = await fetch(`${BACKEND_URL}/upload`, {
+    if (!file) {
+      return NextResponse.json(
+        { error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    // Create a new FormData for the backend request
+    const backendFormData = new FormData();
+    backendFormData.append('file', file);
+
+    // Make the request to the backend
+    const backendUrl = 'https://qr-share-two.vercel.app/upload';
+    console.log('Sending request to backend:', backendUrl);
+
+    const backendResponse = await fetch(backendUrl, {
       method: 'POST',
-      body: newFormData,
+      body: backendFormData,
     });
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    if (!backendResponse.ok) {
+      const errorText = await backendResponse.text();
+      console.error('Backend error:', errorText);
+      return NextResponse.json(
+        { error: 'Backend upload failed' },
+        { status: backendResponse.status }
+      );
+    }
+
+    const responseData = await backendResponse.json();
+    return NextResponse.json(responseData);
   } catch (error: any) {
-    console.error('Upload error:', {
-      message: error.message,
-      stack: error.stack,
-      cause: error.cause
-    });
-    
+    console.error('Upload error:', error);
     return NextResponse.json(
-      { error: error.message || 'Upload failed' },
+      { error: 'Upload failed: ' + error.message },
       { status: 500 }
     );
   }
 }
 
-// Add OPTIONS handler for CORS
-export async function OPTIONS(req: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Headers': '*',
     },
   });
 }
