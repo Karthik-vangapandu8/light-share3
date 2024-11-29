@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const BACKEND_URL = 'https://qr-share-two.vercel.app';
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-
-    const response = await fetch(`${backendUrl}/upload`, {
+    const response = await fetch(`${BACKEND_URL}/upload`, {
       method: 'POST',
       body: formData,
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      return NextResponse.json(
+        { error: errorData.error || 'Upload failed' },
+        { status: response.status }
+      );
+    }
+
     const data = await response.json();
-    
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('Upload error:', error);

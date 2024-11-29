@@ -65,7 +65,7 @@ export default function Home() {
       if (response.data.success) {
         // Use requestAnimationFrame for UI updates
         requestAnimationFrame(() => {
-          const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+          const backendUrl = 'https://qr-share-two.vercel.app';
           const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
           setShareLink(fullShareableLink);
           setQrCodeData(fullShareableLink);
