@@ -42,19 +42,16 @@ export default function Home() {
 
       console.log('Uploading file:', file.name, 'Size:', file.size);
 
-      // Split the upload process into chunks
-      const chunkSize = 1024 * 1024; // 1MB chunks
-      const chunks = Math.ceil(file.size / chunkSize);
-      
+      const backendUrl = 'https://qr-share-two.vercel.app';
       const response = await axios({
         method: 'post',
-        url: '/api/upload',
+        url: `${backendUrl}/upload`,
         data: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Accept': 'application/json',
         },
         onUploadProgress: (progressEvent) => {
-          // Use requestAnimationFrame for smooth progress updates
           requestAnimationFrame(() => {
             if (progressEvent.total) {
               const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -68,9 +65,7 @@ export default function Home() {
       console.log('Upload response:', response.data);
 
       if (response.data.success) {
-        // Use requestAnimationFrame for UI updates
         requestAnimationFrame(() => {
-          const backendUrl = 'https://qr-share-two.vercel.app';
           const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
           console.log('Generated shareable link:', fullShareableLink);
           setShareLink(fullShareableLink);
