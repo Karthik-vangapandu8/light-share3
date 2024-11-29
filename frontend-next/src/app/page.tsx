@@ -41,36 +41,22 @@ export default function Home() {
       setIsUploading(true);
       setUploadError('');
 
-      // Upload directly to backend
-      const backendUrl = 'https://qr-share-two.vercel.app/api/upload';
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(backendUrl, {
+      const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        },
+        body: formData
       });
 
-      const responseText = await response.text();
-      console.log('Raw response:', responseText);
-
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('Failed to parse response:', e);
-        throw new Error('Invalid server response');
-      }
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
       }
 
       if (data.success) {
-        const downloadUrl = `https://qr-share-two.vercel.app/api/download/${data.fileId}`;
+        const downloadUrl = `/api/download/${data.fileId}`;
         setShareLink(downloadUrl);
         setQrCodeData(downloadUrl);
         setShowSuccess(true);

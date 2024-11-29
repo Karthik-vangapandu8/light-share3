@@ -1,74 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { config } from './config';
+import { v4 as uuidv4 } from 'uuid';
 
-export { config };
+// In-memory storage
+const files = new Map();
 
 export async function POST(request: NextRequest) {
   try {
-    // Log request details
-    console.log('Received upload request');
-    console.log('Content-Type:', request.headers.get('content-type'));
-
-    // Get form data
     const formData = await request.formData();
-    const file = formData.get('file');
+    const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
-
-    // Log file details
-    console.log('File received:', {
-      type: file.type,
-      size: file.size,
-      name: (file as File).name
-    });
-
-    // Create new FormData for backend request
-    const backendFormData = new FormData();
-    backendFormData.append('file', file);
-
-    // Make request to backend
-    const backendResponse = await fetch('https://qr-share-two.vercel.app/upload', {
-      method: 'POST',
-      body: backendFormData,
-    });
-
-    // Log backend response status
-    console.log('Backend response status:', backendResponse.status);
-
-    // Get response text first
-    const responseText = await backendResponse.text();
-    console.log('Backend response text:', responseText);
-
-    // Try to parse as JSON
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse backend response:', e);
       return NextResponse.json(
-        { error: 'Invalid response from backend' },
-        { status: 500 }
+        { error: 'No file provided' },
+        { status: 400 }
       );
     }
 
-    if (!backendResponse.ok) {
-      return NextResponse.json(
-        { error: responseData.error || 'Backend upload failed' },
-        { status: backendResponse.status }
-      );
-    }
+    // Convert file to buffer
+    const buffer = await file.arrayBuffer();
+    const fileId = uuidv4();
+    const expiryTime = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
-    return NextResponse.json(responseData);
+    // Store file data
+    files.set(fileId, {
+      data: Buffer.from(buffer),
+      originalName: file.name,
+      mimetype: file.type,
+      expiryTime
+    });
+
+    return NextResponse.json({
+      success: true,
+      fileId,
+      originalName: file.name
+    });
   } catch (error: any) {
-    // Log the full error
-    console.error('Upload error:', {
-      message: error.message,
-      stack: error.stack,
-      cause: error.cause
-    });
-
+    console.error('Upload error:', error);
     return NextResponse.json(
       { error: 'Upload failed: ' + error.message },
       { status: 500 }
