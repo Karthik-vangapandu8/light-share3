@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { QRCodeSVG } from 'qrcode.react';
 import config from '../config';
+import CustomCursor from '../components/CustomCursor';
 
 // Define requestIdleCallback for TypeScript
 const requestIdleCallbackPolyfill = 
