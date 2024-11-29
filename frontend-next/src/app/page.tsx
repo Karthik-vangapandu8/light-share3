@@ -54,15 +54,14 @@ export default function Home() {
     formData.append('file', file);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+      // Using local API route instead of calling backend directly
       const response = await axios({
         method: 'post',
-        url: `${apiUrl}/upload`,
+        url: '/api/upload',
         data: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        withCredentials: true,
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -72,11 +71,12 @@ export default function Home() {
       });
 
       if (response.data.success) {
-        const fullShareableLink = `${apiUrl}${response.data.shareableLink}`;
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+        const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
         setShareLink(fullShareableLink);
         setQrCodeData(fullShareableLink);
       } else {
-        setUploadError('Upload failed. Please try again.');
+        setUploadError(response.data.error || 'Upload failed. Please try again.');
       }
     } catch (error: any) {
       console.error('Upload error:', error);

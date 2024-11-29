@@ -6,17 +6,8 @@ const path = require('path');
 
 const app = express();
 
-// Enable CORS with more permissive options
-app.use(cors({
-  origin: true, // Allow all origins
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-  maxAge: 86400 // Cache preflight requests for 24 hours
-}));
-
-// Handle preflight requests
-app.options('*', cors());
+// Enable CORS
+app.use(cors());
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
