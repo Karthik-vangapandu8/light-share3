@@ -1,12 +1,17 @@
 'use client';
 
-import { useState, useCallback, useMemo, requestIdleCallback, requestAnimationFrame } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { QRCodeSVG } from 'qrcode.react';
-import axios from 'axios';
-import CustomCursor from '../components/CustomCursor';
 import config from '../config';
+
+// Define requestIdleCallback for TypeScript
+const requestIdleCallbackPolyfill = 
+  typeof window !== 'undefined' 
+    ? window.requestIdleCallback || 
+      ((cb) => setTimeout(cb, 1))
+    : (cb: any) => setTimeout(cb, 1);
 
 export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -34,61 +39,69 @@ export default function Home() {
         return;
       }
 
+      setUploadedFile(file);
       setIsUploading(true);
       setUploadError('');
 
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', file);
+      requestIdleCallbackPolyfill(async () => {
+        try {
+          // Create form data
+          const formData = new FormData();
+          formData.append('file', file);
 
-      console.log('Sending file:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
+          console.log('Sending file:', {
+            name: file.name,
+            type: file.type,
+            size: file.size
+          });
+
+          // Make the request
+          const response = await fetch(`${config.backendUrl}/upload`, {
+            method: 'POST',
+            body: formData
+          });
+
+          // Log the response status
+          console.log('Response status:', response.status);
+
+          // Get the response data
+          const text = await response.text();
+          console.log('Response text:', text);
+
+          // Parse the response
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            console.error('Failed to parse response:', e);
+            throw new Error('Invalid server response');
+          }
+
+          // Check for errors
+          if (!response.ok) {
+            throw new Error(data.error || 'Upload failed');
+          }
+
+          // Handle success
+          if (data.success) {
+            const downloadUrl = `${config.backendUrl}${data.shareableLink}`;
+            setShareLink(downloadUrl);
+            setQrCodeData(downloadUrl);
+            setShowSuccess(true);
+          } else {
+            throw new Error(data.error || 'Upload failed');
+          }
+        } catch (error: any) {
+          console.error('Upload failed:', error);
+          setUploadError(error.message || 'Failed to upload file');
+        } finally {
+          setIsUploading(false);
+          setUploadProgress(0);
+        }
       });
-
-      // Make the request
-      const response = await fetch(`${config.backendUrl}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      // Log the response status
-      console.log('Response status:', response.status);
-
-      // Get the response data
-      const text = await response.text();
-      console.log('Response text:', text);
-
-      // Parse the response
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        console.error('Failed to parse response:', e);
-        throw new Error('Invalid server response');
-      }
-
-      // Check for errors
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
-      }
-
-      // Handle success
-      if (data.success) {
-        const downloadUrl = `${config.backendUrl}${data.shareableLink}`;
-        setShareLink(downloadUrl);
-        setQrCodeData(downloadUrl);
-        setShowSuccess(true);
-      } else {
-        throw new Error(data.error || 'Upload failed');
-      }
     } catch (error: any) {
       console.error('Upload failed:', error);
       setUploadError(error.message || 'Failed to upload file');
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
     }
   }, []);
 
