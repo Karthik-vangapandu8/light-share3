@@ -8,10 +8,10 @@ const app = express();
 
 // Configure CORS
 app.use(cors({
-  origin: ['https://qr-share-6pwt.vercel.app', 'http://localhost:3000'],
+  origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept'],
-  credentials: true
+  credentials: false
 }));
 
 // Handle preflight requests
@@ -42,14 +42,15 @@ app.get('/health', (req, res) => {
 // Upload endpoint
 app.post('/upload', upload.single('file'), (req, res) => {
   try {
-    console.log('Received upload request');
-    
     if (!req.file) {
       console.error('No file in request');
-      return res.status(400).json({ error: 'No file uploaded' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'No file uploaded' 
+      });
     }
 
-    console.log('File details:', {
+    console.log('Received file:', {
       originalname: req.file.originalname,
       size: req.file.size,
       mimetype: req.file.mimetype
@@ -58,7 +59,6 @@ app.post('/upload', upload.single('file'), (req, res) => {
     const fileId = uuidv4();
     const expiryTime = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
-    // Store file in memory
     files.set(fileId, {
       data: req.file.buffer,
       originalName: req.file.originalname,
@@ -79,7 +79,10 @@ app.post('/upload', upload.single('file'), (req, res) => {
     });
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ error: 'Failed to upload file: ' + error.message });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to upload file: ' + error.message 
+    });
   }
 });
 

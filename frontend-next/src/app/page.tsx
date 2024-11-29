@@ -38,60 +38,48 @@ export default function Home() {
         return;
       }
 
-      console.log('Starting file upload:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
+      setIsUploading(true);
+      setUploadError('');
 
+      // Upload directly to backend
+      const backendUrl = 'https://qr-share-two.vercel.app/upload';
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/upload', {
+      const response = await fetch(backendUrl, {
         method: 'POST',
         body: formData,
+        headers: {
+          'Accept': 'application/json',
+        },
       });
 
-      console.log('Upload response status:', response.status);
-      
       const responseText = await response.text();
-      console.log('Response text:', responseText);
+      console.log('Raw response:', responseText);
 
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (e) {
         console.error('Failed to parse response:', e);
-        setUploadError('Invalid response from server');
-        return;
+        throw new Error('Invalid server response');
       }
 
       if (!response.ok) {
-        console.error('Upload failed:', data);
-        setUploadError(data.error || 'Upload failed. Please try again.');
-        return;
+        throw new Error(data.error || 'Upload failed');
       }
 
-      console.log('Upload successful:', data);
-
       if (data.success) {
-        const backendUrl = 'https://qr-share-two.vercel.app';
         const fullShareableLink = `${backendUrl}${data.shareableLink}`;
-        console.log('Generated link:', fullShareableLink);
         setShareLink(fullShareableLink);
         setQrCodeData(fullShareableLink);
         setShowSuccess(true);
       } else {
-        setUploadError(data.error || 'Upload failed. Please try again.');
+        throw new Error(data.error || 'Upload failed');
       }
     } catch (error: any) {
-      console.error('Upload error:', {
-        message: error.message,
-        cause: error.cause,
-        stack: error.stack
-      });
-      
-      setUploadError('Failed to upload file. Please try again.');
+      console.error('Upload failed:', error);
+      setUploadError(error.message || 'Failed to upload file');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
