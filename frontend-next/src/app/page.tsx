@@ -41,15 +41,33 @@ export default function Home() {
   };
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (!file) return;
-
-    setUploadedFile(file);
     setIsUploading(true);
-    setUploadProgress(0);
+    const file = acceptedFiles[0];
+    const formData = new FormData();
+    formData.append('file', file);
 
-    await uploadFile(file);
-    setIsUploading(false);
+    try {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(progress);
+          }
+        },
+      });
+
+      setShareLink(`${process.env.NEXT_PUBLIC_API_URL}${response.data.shareableLink}`);
+      setQrCodeData(`${process.env.NEXT_PUBLIC_API_URL}${response.data.shareableLink}`);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
