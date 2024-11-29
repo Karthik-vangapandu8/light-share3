@@ -10,7 +10,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://light-share3.vercel.app',
+  'https://light-share3-iqr8.vercel.app',
   'https://light-share3-git-main-karthik-vangapandu8.vercel.app',
   'https://light-share3-karthik-vangapandu8.vercel.app'
 ];
