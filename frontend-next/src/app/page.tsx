@@ -25,64 +25,45 @@ export default function Home() {
     setUploadError('');
     setUploadProgress(0);
 
-    // Use requestIdleCallback for non-critical initialization
-    requestIdleCallback(() => {
-      const file = acceptedFiles[0];
-      if (file.size > 100 * 1024 * 1024) {
-        setUploadError('File size must be less than 100MB');
-        setIsUploading(false);
-        return;
-      }
-    });
-
     try {
       const file = acceptedFiles[0];
+      
+      if (!file) {
+        setUploadError('No file selected');
+        return;
+      }
+
+      if (file.size > 100 * 1024 * 1024) {
+        setUploadError('File size must be less than 100MB');
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
-      console.log('Uploading file:', file.name, 'Size:', file.size);
-
-      const backendUrl = 'https://qr-share-two.vercel.app';
-      const response = await axios({
-        method: 'post',
-        url: `${backendUrl}/upload`,
-        data: formData,
+      const response = await axios.post('/api/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Accept': 'application/json',
         },
         onUploadProgress: (progressEvent) => {
-          requestAnimationFrame(() => {
-            if (progressEvent.total) {
-              const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setUploadProgress(progress);
-              console.log('Upload progress:', progress + '%');
-            }
-          });
+          if (progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(progress);
+          }
         },
       });
 
-      console.log('Upload response:', response.data);
-
       if (response.data.success) {
-        requestAnimationFrame(() => {
-          const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
-          console.log('Generated shareable link:', fullShareableLink);
-          setShareLink(fullShareableLink);
-          setQrCodeData(fullShareableLink);
-          setShowSuccess(true);
-        });
+        const backendUrl = 'https://qr-share-two.vercel.app';
+        const fullShareableLink = `${backendUrl}${response.data.shareableLink}`;
+        setShareLink(fullShareableLink);
+        setQrCodeData(fullShareableLink);
+        setShowSuccess(true);
       } else {
-        console.error('Upload failed:', response.data.error);
         setUploadError(response.data.error || 'Upload failed. Please try again.');
       }
     } catch (error: any) {
-      console.error('Upload error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      
+      console.error('Upload error:', error.response?.data || error);
       setUploadError(
         error.response?.data?.error || 
         error.message || 
