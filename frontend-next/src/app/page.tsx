@@ -46,17 +46,21 @@ export default function Home() {
 
       const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        }
       });
 
       const data = await response.json();
+      console.log('Upload response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
       }
 
       if (data.success) {
-        const downloadUrl = `/api/download/${data.fileId}`;
+        const downloadUrl = `${window.location.origin}/api/download/${data.fileId}`;
         setShareLink(downloadUrl);
         setQrCodeData(downloadUrl);
         setShowSuccess(true);

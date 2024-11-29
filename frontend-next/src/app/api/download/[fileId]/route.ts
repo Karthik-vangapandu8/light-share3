@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Reference to our in-memory file storage
-const files = new Map();
+export const runtime = 'edge';
+
+// Reference to our file storage
+const FILES = {};
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +11,7 @@ export async function GET(
 ) {
   try {
     const fileId = params.fileId;
-    const fileData = files.get(fileId);
+    const fileData = FILES[fileId];
 
     if (!fileData) {
       return NextResponse.json(
@@ -19,7 +21,7 @@ export async function GET(
     }
 
     if (Date.now() > fileData.expiryTime) {
-      files.delete(fileId);
+      delete FILES[fileId];
       return NextResponse.json(
         { error: 'File has expired' },
         { status: 404 }
@@ -44,4 +46,15 @@ export async function GET(
       { status: 500 }
     );
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  });
 }
