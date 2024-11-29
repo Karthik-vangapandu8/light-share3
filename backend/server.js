@@ -6,12 +6,17 @@ const path = require('path');
 
 const app = express();
 
-// Enable CORS
+// Enable CORS with more permissive options
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: true, // Allow all origins
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400 // Cache preflight requests for 24 hours
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -30,6 +35,7 @@ app.get('/', (req, res) => {
   res.json({ status: 'Light Share API is running' });
 });
 
+// Upload endpoint
 app.post('/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
@@ -47,14 +53,14 @@ app.post('/upload', upload.single('file'), (req, res) => {
       expiryTime: expiryTime
     });
 
-    // Generate shareable link
     const shareableLink = `/download/${fileId}`;
     
     res.json({
       success: true,
       fileId,
       shareableLink,
-      expiryTime
+      expiryTime,
+      originalName: req.file.originalname
     });
   } catch (error) {
     console.error('Upload error:', error);
@@ -62,6 +68,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
   }
 });
 
+// Download endpoint
 app.get('/download/:fileId', (req, res) => {
   const fileId = req.params.fileId;
   const fileData = files.get(fileId);
@@ -83,6 +90,17 @@ app.get('/download/:fileId', (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Handle 404
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
 });
 
 // For local development

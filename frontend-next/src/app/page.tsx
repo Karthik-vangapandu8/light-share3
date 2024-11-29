@@ -13,6 +13,7 @@ export default function Home() {
   const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState('');
 
   const uploadFile = async (file: File) => {
     const formData = new FormData();
@@ -42,6 +43,8 @@ export default function Home() {
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setIsUploading(true);
+    setUploadError('');
+    
     const file = acceptedFiles[0];
     const formData = new FormData();
     formData.append('file', file);
@@ -51,6 +54,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        withCredentials: true,
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -59,11 +63,16 @@ export default function Home() {
         },
       });
 
-      setShareLink(`${process.env.NEXT_PUBLIC_API_URL}${response.data.shareableLink}`);
-      setQrCodeData(`${process.env.NEXT_PUBLIC_API_URL}${response.data.shareableLink}`);
-    } catch (error) {
+      if (response.data.success) {
+        const fullShareableLink = `${process.env.NEXT_PUBLIC_API_URL}${response.data.shareableLink}`;
+        setShareLink(fullShareableLink);
+        setQrCodeData(fullShareableLink);
+      } else {
+        setUploadError('Upload failed. Please try again.');
+      }
+    } catch (error: any) {
       console.error('Upload error:', error);
-      alert('Failed to upload file. Please try again.');
+      setUploadError(error.response?.data?.error || 'Failed to upload file. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
