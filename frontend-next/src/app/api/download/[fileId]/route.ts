@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FILES } from '../../storage';
 
-export const runtime = 'edge';
-
-// Reference to our file storage
-const FILES = {};
+// Configure route options using route segment config
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +10,11 @@ export async function GET(
 ) {
   try {
     const fileId = params.fileId;
-    const fileData = FILES[fileId];
+    console.log('Attempting to download file:', fileId);
+    console.log('Available files:', Array.from(FILES.keys()));
+    
+    const fileData = FILES.get(fileId);
+    console.log('File data found:', fileData ? 'yes' : 'no');
 
     if (!fileData) {
       return NextResponse.json(
@@ -20,22 +23,14 @@ export async function GET(
       );
     }
 
-    if (Date.now() > fileData.expiryTime) {
-      delete FILES[fileId];
-      return NextResponse.json(
-        { error: 'File has expired' },
-        { status: 404 }
-      );
-    }
-
     // Create response with file data
     const response = new NextResponse(fileData.data);
 
     // Set headers
-    response.headers.set('Content-Type', fileData.mimetype);
+    response.headers.set('Content-Type', fileData.type || 'application/octet-stream');
     response.headers.set(
       'Content-Disposition',
-      `attachment; filename="${fileData.originalName}"`
+      `attachment; filename="${fileData.name}"`
     );
 
     return response;
@@ -50,10 +45,10 @@ export async function GET(
 
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
-    status: 200,
+    status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': '*',
     },
   });

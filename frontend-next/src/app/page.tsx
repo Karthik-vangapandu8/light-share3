@@ -6,6 +6,7 @@ import { useDropzone } from 'react-dropzone';
 import { QRCodeSVG } from 'qrcode.react';
 import axios from 'axios';
 import CustomCursor from '../components/CustomCursor';
+import config from '../config';
 
 export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -33,11 +34,6 @@ export default function Home() {
         return;
       }
 
-      if (file.size > 100 * 1024 * 1024) {
-        setUploadError('File size must be less than 100MB');
-        return;
-      }
-
       setIsUploading(true);
       setUploadError('');
 
@@ -45,7 +41,6 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Log the request
       console.log('Sending file:', {
         name: file.name,
         type: file.type,
@@ -53,7 +48,7 @@ export default function Home() {
       });
 
       // Make the request
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${config.backendUrl}/upload`, {
         method: 'POST',
         body: formData
       });
@@ -81,7 +76,7 @@ export default function Home() {
 
       // Handle success
       if (data.success) {
-        const downloadUrl = `/api/download/${data.fileId}`;
+        const downloadUrl = `${config.backendUrl}${data.shareableLink}`;
         setShareLink(downloadUrl);
         setQrCodeData(downloadUrl);
         setShowSuccess(true);
@@ -263,8 +258,7 @@ export default function Home() {
                   ) : (
                     <div>
                       <p className="text-2xl mb-2 text-white/90">Drag & drop a file here, or click to select</p>
-                      <p className="text-sm text-white/40 mt-2">Maximum file size: 100MB</p>
-                      <p className="text-sm text-white/40">Your file will be available for 24 hours</p>
+                      <p className="text-sm text-white/40 mt-2">Your file will be available for 24 hours</p>
                     </div>
                   )}
                 </div>
@@ -279,21 +273,13 @@ export default function Home() {
               >
                 <h2 className="text-2xl font-bold text-white mb-4">Your file is ready!</h2>
                 <div className="bg-white p-4 rounded-xl mb-4">
-                  {qrCodeData ? (
-                    <img 
-                      src={qrCodeData} 
-                      alt="QR Code"
-                      className="w-48 h-48 mx-auto"
-                    />
-                  ) : (
-                    <QRCodeSVG
-                      value={shareLink}
-                      size={200}
-                      className="mx-auto"
-                      level="H"
-                      includeMargin={true}
-                    />
-                  )}
+                  <QRCodeSVG
+                    value={shareLink || ''}
+                    size={200}
+                    className="mx-auto"
+                    level="H"
+                    includeMargin={true}
+                  />
                 </div>
                 <div className="space-y-4">
                   <p className="text-white/60 text-sm">

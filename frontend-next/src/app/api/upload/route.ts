@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { FILES } from '../storage';
 
-// Simple in-memory storage using a Map
-const FILES = new Map();
+// Configure route options using route segment config
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
     console.log('Upload request received');
 
-    const data = await request.formData();
-    const file = data.get('file');
+    // Parse form data
+    const formData = await request.formData();
+    const file = formData.get('file');
 
-    if (!file || !(file instanceof File)) {
+    console.log('Form data keys:', Array.from(formData.keys()));
+    console.log('File object:', file);
+
+    if (!file || !(file instanceof Blob)) {
+      console.error('No valid file in request');
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
@@ -30,19 +36,20 @@ export async function POST(request: NextRequest) {
 
     // Store file data
     FILES.set(fileId, {
-      name: file.name,
-      type: file.type,
+      name: file instanceof File ? file.name : 'unnamed-file',
+      type: file.type || 'application/octet-stream',
       size: file.size,
       data: buffer,
       createdAt: Date.now()
     });
 
     console.log('File stored with ID:', fileId);
+    console.log('Current files in storage:', Array.from(FILES.keys()));
 
     return NextResponse.json({
       success: true,
       fileId,
-      name: file.name
+      name: file instanceof File ? file.name : 'unnamed-file'
     });
 
   } catch (error) {
@@ -60,12 +67,13 @@ export async function GET() {
   });
 }
 
-export async function OPTIONS() {
+// OPTIONS endpoint for CORS
+export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
-    status: 200,
+    status: 204,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': '*',
     },
   });

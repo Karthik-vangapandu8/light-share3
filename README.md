@@ -1,32 +1,54 @@
-# Light Share - Quick File Sharing with QR Codes
+# Light Share 🚀
 
-Light Share is a modern web application that allows users to quickly share files using QR codes. Files are automatically deleted after 24 hours for privacy.
+Share files instantly with QR codes! "Share karenge kya?"
 
-## Features
+## Features ✨
 
-- Drag & drop file uploads
-- Instant QR code generation
+- Instant file sharing
+- QR code generation
+- No authentication required
+- Simple and intuitive UI
+- File size limit: 100MB
 - 24-hour file expiry
-- No signup required
-- Modern UI with dark theme
-- Mobile-friendly design
 
-## Tech Stack
+## Tech Stack 🛠
 
 ### Frontend
 - Next.js 14
 - TypeScript
+- React
 - Tailwind CSS
-- Framer Motion
-- React Dropzone
-- Axios
 
 ### Backend
+- Express.js
 - Node.js
-- Express
-- Multer
+- In-memory file storage
 
-## Development Setup
+## Deployment 🌐
+
+### Frontend (Vercel)
+
+1. Push your code to GitHub
+2. Visit [Vercel](https://vercel.com)
+3. Import your GitHub repository
+4. Set environment variables:
+   ```
+   NEXT_PUBLIC_BACKEND_URL=https://your-backend-url.onrender.com
+   ```
+5. Deploy!
+
+### Backend (Render)
+
+1. Visit [Render](https://render.com)
+2. Create a new Web Service
+3. Connect your GitHub repository
+4. Configure:
+   - Build Command: `npm install`
+   - Start Command: `node server.js`
+   - Environment Variables: None required
+5. Deploy!
+
+## Local Development 💻
 
 1. Clone the repository
 2. Install dependencies:
@@ -40,38 +62,29 @@ Light Share is a modern web application that allows users to quickly share files
    npm install
    ```
 
-3. Create `.env.local` in frontend-next:
-   ```
-   NEXT_PUBLIC_API_URL=http://localhost:3001
-   ```
-
-4. Start the development servers:
+3. Start the servers:
    ```bash
-   # Frontend
+   # Backend (http://localhost:3001)
+   cd backend
+   node server.js
+
+   # Frontend (http://localhost:3000)
    cd frontend-next
    npm run dev
-
-   # Backend
-   cd ../backend
-   node server.js
    ```
 
-## Deployment
+## Important Notes 📝
 
-### Frontend (Vercel)
+- Files are stored in memory and will be lost on server restart
+- Files expire after 24 hours
+- Maximum file size is 100MB
+- CORS is configured for specific origins only
 
-1. Push your code to GitHub
-2. Import project in Vercel
-3. Set environment variables:
-   - `NEXT_PUBLIC_API_URL`: Your backend API URL
+## Future Enhancements 🚀
 
-### Backend (Your Choice)
-
-1. Deploy to your preferred hosting (e.g., Heroku, DigitalOcean)
-2. Set up proper file storage solution
-3. Configure CORS for your frontend domain
-4. Set up environment variables as needed
-
-## License
-
-MIT
+- [ ] Persistent storage
+- [ ] Password protection
+- [ ] Custom expiry times
+- [ ] File preview
+- [ ] Download count tracking
+- [ ] Dark mode
