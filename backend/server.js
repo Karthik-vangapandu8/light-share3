@@ -25,7 +25,12 @@ const upload = multer({
 // Store files in memory (for demo purposes)
 const files = new Map();
 
-app.post('/api/upload', upload.single('file'), (req, res) => {
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ status: 'Light Share API is running' });
+});
+
+app.post('/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -43,7 +48,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
     });
 
     // Generate shareable link
-    const shareableLink = `/api/download/${fileId}`;
+    const shareableLink = `/download/${fileId}`;
     
     res.json({
       success: true,
@@ -57,7 +62,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
 });
 
-app.get('/api/download/:fileId', (req, res) => {
+app.get('/download/:fileId', (req, res) => {
   const fileId = req.params.fileId;
   const fileData = files.get(fileId);
 
@@ -76,7 +81,7 @@ app.get('/api/download/:fileId', (req, res) => {
 });
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
