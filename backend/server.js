@@ -1,21 +1,26 @@
 const express = require('express');
-const multer = require('multer');
 const cors = require('cors');
+const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
 const app = express();
 
-// Configure CORS - Allow all origins temporarily for debugging
-app.use(cors({
-  origin: '*',  // Allow all origins
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept'],
-  credentials: false
-}));
+// Enable CORS for all routes
+app.use(cors());
 
-// Handle preflight requests
-app.options('*', cors());
+// Additional CORS headers for preflight requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
