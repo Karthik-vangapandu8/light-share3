@@ -6,22 +6,9 @@ const path = require('path');
 
 const app = express();
 
-// Configure CORS
+// Configure CORS - Allow all origins temporarily for debugging
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Allow localhost and all Vercel domains
-    if (
-      origin.startsWith('http://localhost:') ||
-      origin.includes('vercel.app')
-    ) {
-      return callback(null, true);
-    }
-    
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: '*',  // Allow all origins
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Accept'],
   credentials: false
