@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
+import toast from '../components/Toast';
 import config from '../config';
 import CustomCursor from '../components/CustomCursor';
-import toast from '../components/Toast';
 
 // Define requestIdleCallback for TypeScript
 const requestIdleCallbackPolyfill = 
@@ -18,7 +18,7 @@ const requestIdleCallbackPolyfill =
 export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [shareLink, setShareLink] = useState<string | null>(null);
-  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
@@ -68,7 +68,7 @@ export default function Home() {
   }, []);
 
   // Memoize dropzone config
-  const dropzoneConfig = useMemo(() => ({
+  const dropzoneConfig = useCallback(() => ({
     onDrop,
     maxSize: 100 * 1024 * 1024, // 100MB
     multiple: false,
@@ -81,16 +81,16 @@ export default function Home() {
     }
   }), [onDrop]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneConfig);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone(dropzoneConfig());
 
   // Memoize dynamic classes
-  const dropzoneClasses = useMemo(() => 
+  const dropzoneClasses = useCallback(() => 
     `mt-8 p-12 bg-white/[0.02] backdrop-blur-lg rounded-2xl max-w-2xl mx-auto 
     cursor-pointer border border-white/10 transition-all duration-300
     ${isDragActive ? 'bg-white/[0.08] border-white/30' : 'hover:bg-white/[0.04] hover:border-white/20'}`
   , [isDragActive]);
 
-  const copyToClipboard = async () => {
+  const copyToClipboard = useCallback(async () => {
     if (shareLink) {
       try {
         await navigator.clipboard.writeText(shareLink);
@@ -99,7 +99,7 @@ export default function Home() {
         console.error('Failed to copy:', err);
       }
     }
-  };
+  }, [shareLink]);
 
   const features = [
     {
@@ -206,7 +206,7 @@ export default function Home() {
                 onKeyDown={getRootProps().onKeyDown}
                 onFocus={getRootProps().onFocus}
                 onBlur={getRootProps().onBlur}
-                className={dropzoneClasses}
+                className={dropzoneClasses()}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -330,12 +330,14 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mb-4">
-            <p className="text-gray-600 mb-2">Or scan this QR code:</p>
-            <div className="bg-white p-4 rounded-lg inline-block">
-              <QRCodeSVG value={qrCodeData} size={200} />
+          {qrCodeData && (
+            <div className="mb-4">
+              <p className="text-gray-600 mb-2">Or scan this QR code:</p>
+              <div className="bg-white p-4 rounded-lg inline-block">
+                <QRCodeSVG value={qrCodeData} size={200} />
+              </div>
             </div>
-          </div>
+          )}
 
           <a
             href={shareLink}
