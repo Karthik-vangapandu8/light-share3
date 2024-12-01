@@ -11,6 +11,10 @@ const nextConfig = {
         ],
       },
     ]
+  },
+  // Ensure experimental features are enabled
+  experimental: {
+    serverActions: true,
   }
 }
 

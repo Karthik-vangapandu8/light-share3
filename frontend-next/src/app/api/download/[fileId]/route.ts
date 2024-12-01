@@ -12,13 +12,25 @@ export async function GET(
   try {
     const fileId = params.fileId;
     console.log('Attempting to download file with ID:', fileId);
+    
+    // Debug storage state
+    console.log('Current storage state:');
+    fileStorage.debug();
+    
     const fileData = fileStorage.get(fileId);
 
     if (!fileData) {
       console.log('File not found in storage');
       return NextResponse.json(
         { error: 'File not found or has expired' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        }
       );
     }
 
@@ -28,20 +40,35 @@ export async function GET(
       fileStorage.delete(fileId); // Clean up expired file
       return NextResponse.json(
         { error: 'File has expired' },
-        { status: 410 }
+        { 
+          status: 410,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        }
       );
     }
 
     console.log('File found, preparing download response');
+    console.log('File details:', {
+      name: fileData.name,
+      type: fileData.type,
+      size: fileData.size,
+      createdAt: fileData.createdAt,
+      expiresAt: fileData.expiresAt
+    });
     
-    // Set CORS headers
+    // Set response headers
     const headers = new Headers({
       'Content-Type': fileData.type || 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${fileData.name}"`,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileData.name)}"`,
       'Content-Length': fileData.size.toString(),
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Cache-Control': 'no-store'
     });
 
     // Create response with file data
@@ -50,8 +77,18 @@ export async function GET(
   } catch (error) {
     console.error('Download error:', error);
     return NextResponse.json(
-      { error: 'Failed to download file', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        error: 'Failed to download file', 
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      }
     );
   }
 }
