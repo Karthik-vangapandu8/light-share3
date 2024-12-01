@@ -26,23 +26,36 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
     
-    // Store file in memory
-    fileStorage.set(fileId, {
+    // Store file in memory with expiration
+    const fileData = {
       name: file.name,
       type: file.type,
       size: file.size,
       data: buffer,
-      createdAt: new Date()
-    });
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+    };
+    
+    fileStorage.set(fileId, fileData);
 
     // Create shareable link
     const shareableLink = `/api/download/${fileId}`;
 
+    // Set CORS headers
+    const headers = new Headers({
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+
     return NextResponse.json({
       success: true,
       message: 'File uploaded successfully',
-      shareableLink
-    });
+      shareableLink,
+      fileId,
+      fileName: file.name,
+      expiresAt: fileData.expiresAt
+    }, { headers });
 
   } catch (error) {
     console.error('Upload error:', error);

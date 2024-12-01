@@ -39,11 +39,12 @@ export default function Home() {
       
       if (data.success) {
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const fullShareLink = `${baseUrl}${data.shareableLink}`;
+        const downloadUrl = `${baseUrl}/download/${data.shareableLink.split('/').pop()}`;
         
-        setShareLink(fullShareLink);
-        setQrCodeData(fullShareLink);
+        setShareLink(downloadUrl);
+        setQrCodeData(downloadUrl);
         setShowSuccess(true);
+        toast.success('File uploaded successfully!');
       } else {
         throw new Error(data.error || 'Upload failed');
       }
