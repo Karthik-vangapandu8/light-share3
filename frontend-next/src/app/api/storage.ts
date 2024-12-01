@@ -10,9 +10,9 @@ export const fileStorage = new Map<string, {
 // Clean up files older than 24 hours
 setInterval(() => {
   const now = Date.now();
-  for (const [id, file] of fileStorage.entries()) {
+  Array.from(fileStorage.entries()).forEach(([id, file]) => {
     if (now - file.createdAt.getTime() > 24 * 60 * 60 * 1000) {
       fileStorage.delete(id);
     }
-  }
+  });
 }, 60 * 60 * 1000); // Run every hour
