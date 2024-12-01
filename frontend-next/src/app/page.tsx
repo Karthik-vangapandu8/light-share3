@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from '../components/Toast';
 import config from '../config';
@@ -184,25 +184,23 @@ export default function Home() {
           </motion.h1>
           
           <motion.p
-            className="text-3xl text-white/80 mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            className="text-xl md:text-2xl text-white/80 text-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            Share karenge kya? 🚀
-          </motion.p>
-
-          <motion.p
-            className="text-xl text-white/60 mb-12 max-w-2xl mx-auto"
-          >
-            The fastest way to share files. No signup required. Just drag, drop, and share with a QR code.
+            Share files instantly with anyone, anywhere.
           </motion.p>
 
           <AnimatePresence mode="wait">
             {!shareLink ? (
               <motion.div
                 key="dropzone"
-                onClick={getRootProps().onClick}
+                {...getRootProps()}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: 0.3 }}
                 onKeyDown={getRootProps().onKeyDown}
                 onFocus={getRootProps().onFocus}
                 onBlur={getRootProps().onBlur}
@@ -211,89 +209,37 @@ export default function Home() {
                 whileTap={{ scale: 0.98 }}
               >
                 <input {...getInputProps()} />
-                <div className="text-white text-xl">
-                  {isUploading ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Uploading... {uploadProgress}%</span>
-                      </div>
-                      <div className="w-full bg-white/10 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full h-2 transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ) : isDragActive ? (
-                    <div className="text-purple-400">Drop your file here! ✨</div>
-                  ) : (
-                    <div>
-                      <p className="text-2xl mb-2 text-white/90">Drag & drop a file here, or click to select</p>
-                      <p className="text-sm text-white/40 mt-2">Your file will be available for 24 hours</p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="qr-code"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="mt-8 p-8 bg-white/[0.02] backdrop-blur-lg rounded-2xl max-w-md mx-auto border border-white/10"
-              >
-                <h2 className="text-2xl font-bold text-white mb-4">Your file is ready!</h2>
-                <div className="bg-white p-4 rounded-xl mb-4">
-                  <QRCodeSVG
-                    value={shareLink || ''}
-                    size={200}
-                    className="mx-auto"
-                    level="H"
-                    includeMargin={true}
-                  />
-                </div>
-                <div className="space-y-4">
-                  <p className="text-white/60 text-sm">
-                    Scan this QR code or use the link below to download your file
+                <div className="text-center">
+                  <p className="text-white/60 text-lg mb-2">
+                    {isDragActive
+                      ? "Drop the file here..."
+                      : "Drag & drop a file here, or click to select"}
                   </p>
-                  <div 
-                    onClick={copyToClipboard}
-                    className="bg-white/[0.02] p-2 rounded-lg truncate cursor-pointer hover:bg-white/[0.04] transition-all duration-300"
-                  >
-                    <p className="text-white/60 text-sm">
-                      {shareLink}
-                    </p>
-                  </div>
-                  <p className="text-white/40 text-xs">
-                    Click to copy link
+                  <p className="text-white/40 text-sm">
+                    Maximum file size: 100MB
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setShareLink(null);
-                    setQrCodeData(null);
-                    setUploadedFile(null);
-                    setUploadProgress(0);
-                  }}
-                  className="mt-6 text-purple-400 hover:text-purple-300 transition-colors duration-300 text-sm"
-                >
-                  Share another file
-                </button>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
 
-          {uploadedFile && !shareLink && (
+          {isUploading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-4 text-white/60"
+              className="mt-4 text-center text-white/60"
             >
-              Selected file: {uploadedFile.name}
+              Uploading...
+            </motion.div>
+          )}
+
+          {uploadError && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-4 text-center text-red-500"
+            >
+              {uploadError}
             </motion.div>
           )}
         </motion.div>
