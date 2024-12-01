@@ -11,28 +11,46 @@ export async function GET(
 ) {
   try {
     const fileId = params.fileId;
+    console.log('Attempting to download file with ID:', fileId);
     const fileData = fileStorage.get(fileId);
 
     if (!fileData) {
+      console.log('File not found in storage');
       return NextResponse.json(
-        { error: 'File not found' },
+        { error: 'File not found or has expired' },
         { status: 404 }
       );
     }
 
+    // Check if file has expired
+    if (fileData.expiresAt && new Date() > new Date(fileData.expiresAt)) {
+      console.log('File has expired');
+      fileStorage.delete(fileId); // Clean up expired file
+      return NextResponse.json(
+        { error: 'File has expired' },
+        { status: 410 }
+      );
+    }
+
+    console.log('File found, preparing download response');
+    
+    // Set CORS headers
+    const headers = new Headers({
+      'Content-Type': fileData.type || 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${fileData.name}"`,
+      'Content-Length': fileData.size.toString(),
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+
     // Create response with file data
-    const response = new NextResponse(fileData.data);
+    return new NextResponse(fileData.data, { headers });
 
-    // Set appropriate headers
-    response.headers.set('Content-Type', fileData.type || 'application/octet-stream');
-    response.headers.set('Content-Disposition', `attachment; filename="${fileData.name}"`);
-    response.headers.set('Content-Length', fileData.size.toString());
-
-    return response;
   } catch (error) {
     console.error('Download error:', error);
     return NextResponse.json(
-      { error: 'Failed to download file' },
+      { error: 'Failed to download file', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -43,6 +61,7 @@ export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
     status: 200,
     headers: {
+      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
       'Access-Control-Max-Age': '86400',

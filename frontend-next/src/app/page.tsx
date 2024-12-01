@@ -39,7 +39,8 @@ export default function Home() {
       
       if (data.success) {
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const downloadUrl = `${baseUrl}/download/${data.shareableLink.split('/').pop()}`;
+        const fileId = data.shareableLink.split('/').pop();
+        const downloadUrl = `${baseUrl}/api/download/${fileId}`;
         
         setShareLink(downloadUrl);
         setQrCodeData(downloadUrl);

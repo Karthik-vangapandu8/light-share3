@@ -1,18 +1,58 @@
-// In-memory storage for files
-export const fileStorage = new Map<string, {
-  name: string;
-  type: string;
-  size: number;
-  data: Uint8Array;
-  createdAt: Date;
-}>();
+import { FileData } from './types';
 
-// Clean up files older than 24 hours
-setInterval(() => {
-  const now = Date.now();
-  Array.from(fileStorage.entries()).forEach(([id, file]) => {
-    if (now - file.createdAt.getTime() > 24 * 60 * 60 * 1000) {
-      fileStorage.delete(id);
+class FileStorage {
+  private storage: Map<string, FileData>;
+  private cleanupInterval: NodeJS.Timeout;
+
+  constructor() {
+    this.storage = new Map();
+    // Run cleanup every hour
+    this.cleanupInterval = setInterval(() => this.cleanup(), 60 * 60 * 1000);
+  }
+
+  set(id: string, data: FileData): void {
+    console.log(`Storing file with ID: ${id}`);
+    this.storage.set(id, data);
+  }
+
+  get(id: string): FileData | undefined {
+    console.log(`Retrieving file with ID: ${id}`);
+    const data = this.storage.get(id);
+    if (!data) {
+      console.log(`File with ID ${id} not found`);
     }
-  });
-}, 60 * 60 * 1000); // Run every hour
+    return data;
+  }
+
+  delete(id: string): boolean {
+    console.log(`Deleting file with ID: ${id}`);
+    return this.storage.delete(id);
+  }
+
+  private cleanup(): void {
+    console.log('Running storage cleanup...');
+    const now = new Date();
+    for (const [id, data] of this.storage.entries()) {
+      if (data.expiresAt && now > new Date(data.expiresAt)) {
+        console.log(`Cleaning up expired file: ${id}`);
+        this.storage.delete(id);
+      }
+    }
+  }
+
+  // For debugging
+  debug(): void {
+    console.log('Current storage state:');
+    for (const [id, data] of this.storage.entries()) {
+      console.log(`- File ID: ${id}`);
+      console.log(`  Name: ${data.name}`);
+      console.log(`  Type: ${data.type}`);
+      console.log(`  Size: ${data.size}`);
+      console.log(`  Created: ${data.createdAt}`);
+      console.log(`  Expires: ${data.expiresAt}`);
+    }
+  }
+}
+
+// Create singleton instance
+export const fileStorage = new FileStorage();
