@@ -101,24 +101,26 @@ export default function Home() {
           <AnimatePresence mode="wait">
             {!shareLink && (
               <motion.div
-                key="dropzone"
-                className={dropzoneClasses}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ delay: 0.3 }}
-                {...getRootProps()}
               >
-                <input {...getInputProps()} />
-                <div className="text-center">
-                  <p className="text-white/60 text-lg mb-2">
-                    {isDragActive
-                      ? "Drop the file here..."
-                      : "Drag & drop a file here, or click to select"}
-                  </p>
-                  <p className="text-white/40 text-sm">
-                    Maximum file size: 100MB
-                  </p>
+                <div
+                  {...getRootProps()}
+                  className={dropzoneClasses}
+                >
+                  <input {...getInputProps()} />
+                  <div className="text-center">
+                    <p className="text-white/60 text-lg mb-2">
+                      {isDragActive
+                        ? "Drop the file here..."
+                        : "Drag & drop a file here, or click to select"}
+                    </p>
+                    <p className="text-white/40 text-sm">
+                      Maximum file size: 100MB
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             )}
