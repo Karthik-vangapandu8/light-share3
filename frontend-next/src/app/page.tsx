@@ -6,6 +6,7 @@ import { useDropzone } from 'react-dropzone';
 import { QRCodeSVG } from 'qrcode.react';
 import config from '../config';
 import CustomCursor from '../components/CustomCursor';
+import toast from '../components/Toast';
 
 // Define requestIdleCallback for TypeScript
 const requestIdleCallbackPolyfill = 
@@ -33,11 +34,9 @@ export default function Home() {
     setUploadError('');
 
     try {
-      // Create form data
       const formData = new FormData();
       formData.append('file', file);
 
-      // Make the request
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
@@ -50,8 +49,12 @@ export default function Home() {
       const data = await response.json();
       
       if (data.success) {
-        setShareLink(data.shareableLink);
-        setQrCodeData(window.location.origin + data.shareableLink);
+        // Get the base URL from the window location
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        const fullShareLink = `${baseUrl}${data.shareableLink}`;
+        
+        setShareLink(fullShareLink);
+        setQrCodeData(fullShareLink);
         setShowSuccess(true);
       } else {
         throw new Error(data.error || 'Upload failed');
@@ -91,7 +94,7 @@ export default function Home() {
     if (shareLink) {
       try {
         await navigator.clipboard.writeText(shareLink);
-        alert('Link copied to clipboard!');
+        toast.success('Link copied to clipboard!');
       } catch (err) {
         console.error('Failed to copy:', err);
       }
@@ -295,6 +298,55 @@ export default function Home() {
           )}
         </motion.div>
       </div>
+
+      {showSuccess && shareLink && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 p-6 bg-white rounded-lg shadow-lg"
+        >
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">
+            File Uploaded Successfully! 🎉
+          </h3>
+          
+          <div className="mb-4">
+            <p className="text-gray-600 mb-2">Share this link:</p>
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={shareLink}
+                readOnly
+                className="flex-1 p-2 border rounded-md bg-gray-50"
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareLink);
+                  toast.success('Link copied to clipboard!');
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <p className="text-gray-600 mb-2">Or scan this QR code:</p>
+            <div className="bg-white p-4 rounded-lg inline-block">
+              <QRCodeSVG value={qrCodeData} size={200} />
+            </div>
+          </div>
+
+          <a
+            href={shareLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+          >
+            Download File
+          </a>
+        </motion.div>
+      )}
 
       {/* Features Section */}
       <div className="py-24 relative">
