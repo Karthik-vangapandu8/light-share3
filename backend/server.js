@@ -126,13 +126,11 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
 });
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  const port = process.env.PORT || 3001;
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
-}
+// Start server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 // Export for serverless
 module.exports = app;

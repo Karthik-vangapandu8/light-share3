@@ -1,14 +1,15 @@
 {
-  "name": "light-share-backend",
+  "name": "light-share3-backend",
   "version": "1.0.0",
-  "description": "Backend for Light Share - File sharing with QR codes",
+  "description": "Backend for Light Share file sharing app",
   "main": "server.js",
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "start:render": "node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

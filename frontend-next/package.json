@@ -1,5 +1,5 @@
 {
-  "name": "light-share",
+  "name": "light-share3",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,29 +9,20 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@chakra-ui/react": "^2.8.2",
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0",
-    "@types/react-dropzone": "^5.1.0",
-    "@types/uuid": "^10.0.0",
-    "axios": "^1.7.8",
-    "canvas-confetti": "^1.9.2",
-    "framer-motion": "^10.16.4",
-    "next": "14.0.3",
-    "qrcode.react": "^4.1.0",
+    "next": "14.0.4",
     "react": "^18",
     "react-dom": "^18",
-    "react-dropzone": "^14.3.5",
-    "uuid": "^11.0.3"
+    "framer-motion": "^10.16.16",
+    "react-dropzone": "^14.2.3",
+    "qrcode.react": "^3.1.0",
+    "uuid": "^9.0.1",
+    "@types/uuid": "^9.0.7"
   },
   "devDependencies": {
-    "@types/canvas-confetti": "^1.6.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.0.3",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"

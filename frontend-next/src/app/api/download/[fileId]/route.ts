@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FILES } from '../../storage';
+import { fileStorage } from '../../storage';
 
 // Configure route options using route segment config
 export const dynamic = 'force-dynamic';
@@ -10,15 +10,11 @@ export async function GET(
 ) {
   try {
     const fileId = params.fileId;
-    console.log('Attempting to download file:', fileId);
-    console.log('Available files:', Array.from(FILES.keys()));
-    
-    const fileData = FILES.get(fileId);
-    console.log('File data found:', fileData ? 'yes' : 'no');
+    const fileData = fileStorage.get(fileId);
 
     if (!fileData) {
       return NextResponse.json(
-        { error: 'File not found or expired' },
+        { error: 'File not found' },
         { status: 404 }
       );
     }
@@ -27,11 +23,9 @@ export async function GET(
     const response = new NextResponse(fileData.data);
 
     // Set headers
-    response.headers.set('Content-Type', fileData.type || 'application/octet-stream');
-    response.headers.set(
-      'Content-Disposition',
-      `attachment; filename="${fileData.name}"`
-    );
+    response.headers.set('Content-Type', fileData.type);
+    response.headers.set('Content-Disposition', `attachment; filename="${fileData.name}"`);
+    response.headers.set('Content-Length', fileData.size.toString());
 
     return response;
   } catch (error: any) {
