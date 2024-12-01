@@ -25,84 +25,42 @@ export default function Home() {
 
   // Memoize the drop handler
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!acceptedFiles.length) return;
+    const file = acceptedFiles[0];
+    if (!file) return;
 
-    // Reset states
+    setUploadedFile(file);
     setIsUploading(true);
     setUploadError('');
-    setUploadProgress(0);
 
     try {
-      const file = acceptedFiles[0];
-      
-      if (!file) {
-        setUploadError('No file selected');
-        return;
+      // Create form data
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Make the request
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
       }
 
-      setUploadedFile(file);
-      setIsUploading(true);
-      setUploadError('');
-
-      requestIdleCallbackPolyfill(async () => {
-        try {
-          // Create form data
-          const formData = new FormData();
-          formData.append('file', file);
-
-          console.log('Sending file:', {
-            name: file.name,
-            type: file.type,
-            size: file.size
-          });
-
-          // Make the request
-          const response = await fetch(`${config.backendUrl}/upload`, {
-            method: 'POST',
-            body: formData
-          });
-
-          // Log the response status
-          console.log('Response status:', response.status);
-
-          // Get the response data
-          const text = await response.text();
-          console.log('Response text:', text);
-
-          // Parse the response
-          let data;
-          try {
-            data = JSON.parse(text);
-          } catch (e) {
-            console.error('Failed to parse response:', e);
-            throw new Error('Invalid server response');
-          }
-
-          // Check for errors
-          if (!response.ok) {
-            throw new Error(data.error || 'Upload failed');
-          }
-
-          // Handle success
-          if (data.success) {
-            const downloadUrl = `${config.backendUrl}${data.shareableLink}`;
-            setShareLink(downloadUrl);
-            setQrCodeData(downloadUrl);
-            setShowSuccess(true);
-          } else {
-            throw new Error(data.error || 'Upload failed');
-          }
-        } catch (error: any) {
-          console.error('Upload failed:', error);
-          setUploadError(error.message || 'Failed to upload file');
-        } finally {
-          setIsUploading(false);
-          setUploadProgress(0);
-        }
-      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setShareLink(data.shareableLink);
+        setQrCodeData(window.location.origin + data.shareableLink);
+        setShowSuccess(true);
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
     } catch (error: any) {
       console.error('Upload failed:', error);
       setUploadError(error.message || 'Failed to upload file');
+    } finally {
+      setIsUploading(false);
     }
   }, []);
 

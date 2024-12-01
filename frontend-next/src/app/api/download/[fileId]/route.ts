@@ -3,9 +3,10 @@ import { fileStorage } from '../../storage';
 
 // Configure route options using route segment config
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
-  request: NextRequest,
+  req: NextRequest,
   { params }: { params: { fileId: string } }
 ) {
   try {
@@ -22,28 +23,29 @@ export async function GET(
     // Create response with file data
     const response = new NextResponse(fileData.data);
 
-    // Set headers
-    response.headers.set('Content-Type', fileData.type);
+    // Set appropriate headers
+    response.headers.set('Content-Type', fileData.type || 'application/octet-stream');
     response.headers.set('Content-Disposition', `attachment; filename="${fileData.name}"`);
     response.headers.set('Content-Length', fileData.size.toString());
 
     return response;
-  } catch (error: any) {
+  } catch (error) {
     console.error('Download error:', error);
     return NextResponse.json(
-      { error: 'Download failed: ' + error.message },
+      { error: 'Failed to download file' },
       { status: 500 }
     );
   }
 }
 
-export async function OPTIONS(request: NextRequest) {
+// Handle OPTIONS request for CORS
+export async function OPTIONS(req: NextRequest) {
   return new NextResponse(null, {
-    status: 204,
+    status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
     },
   });
 }

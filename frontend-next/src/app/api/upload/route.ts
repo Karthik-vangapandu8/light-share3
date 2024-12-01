@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { fileStorage } from '../storage';
 
-// In-memory storage for files (will be cleared on server restart)
-const fileStorage = new Map();
-
-// Configure route options using route segment config
+// Configure route segment config
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
-export async function POST(request: NextRequest) {
+// Configure allowed methods
+export async function POST(req: NextRequest) {
   try {
-    const formData = await request.formData();
+    const formData = await req.formData();
     const file = formData.get('file') as File;
     
     if (!file) {
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
     const fileId = uuidv4();
     
     // Convert file to buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
     
     // Store file in memory
     fileStorage.set(fileId, {
@@ -52,20 +53,20 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
-  return NextResponse.json({
-    message: 'Upload endpoint is working'
+// Handle OPTIONS request for CORS
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+    },
   });
 }
 
-// OPTIONS endpoint for CORS
-export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': '*',
-    },
+export async function GET() {
+  return NextResponse.json({
+    message: 'Upload endpoint is working'
   });
 }
