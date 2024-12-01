@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fileStorage } from '../../storage';
+import { supabase } from '@/lib/supabase';
 
 // Configure route options using route segment config
 export const dynamic = 'force-dynamic';
@@ -13,14 +13,15 @@ export async function GET(
     const fileId = params.fileId;
     console.log('Attempting to download file with ID:', fileId);
     
-    // Debug storage state
-    console.log('Current storage state:');
-    fileStorage.debug();
-    
-    const fileData = fileStorage.get(fileId);
+    // Get file metadata from database
+    const { data: fileData, error: dbError } = await supabase
+      .from('files')
+      .select('*')
+      .eq('id', fileId)
+      .single();
 
-    if (!fileData) {
-      console.log('File not found in storage');
+    if (dbError || !fileData) {
+      console.log('File not found in database');
       return NextResponse.json(
         { error: 'File not found or has expired' },
         { 
@@ -35,9 +36,21 @@ export async function GET(
     }
 
     // Check if file has expired
-    if (fileData.expiresAt && new Date() > new Date(fileData.expiresAt)) {
+    if (new Date() > new Date(fileData.expires_at)) {
       console.log('File has expired');
-      fileStorage.delete(fileId); // Clean up expired file
+      
+      // Delete expired file from storage
+      await supabase
+        .storage
+        .from('files')
+        .remove([fileData.storage_path]);
+      
+      // Delete metadata from database
+      await supabase
+        .from('files')
+        .delete()
+        .eq('id', fileId);
+
       return NextResponse.json(
         { error: 'File has expired' },
         { 
@@ -51,13 +64,27 @@ export async function GET(
       );
     }
 
+    // Get file from storage
+    const { data: fileBuffer, error: storageError } = await supabase
+      .storage
+      .from('files')
+      .download(fileData.storage_path);
+
+    if (storageError || !fileBuffer) {
+      console.error('Storage error:', storageError);
+      return NextResponse.json(
+        { error: 'Failed to retrieve file from storage' },
+        { status: 500 }
+      );
+    }
+
     console.log('File found, preparing download response');
     console.log('File details:', {
       name: fileData.name,
       type: fileData.type,
       size: fileData.size,
-      createdAt: fileData.createdAt,
-      expiresAt: fileData.expiresAt
+      created_at: fileData.created_at,
+      expires_at: fileData.expires_at
     });
     
     // Set response headers
@@ -72,7 +99,7 @@ export async function GET(
     });
 
     // Create response with file data
-    return new NextResponse(fileData.data, { headers });
+    return new NextResponse(fileBuffer, { headers });
 
   } catch (error) {
     console.error('Download error:', error);

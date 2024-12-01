@@ -38,13 +38,8 @@ export default function Home() {
       const data = await response.json();
       
       if (data.success) {
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const fileId = data.fileId;  
-        const downloadUrl = `${baseUrl}/api/download/${fileId}`;
-        
-        console.log('Generated download URL:', downloadUrl);
-        setShareLink(downloadUrl);
-        setQrCodeData(downloadUrl);
+        setShareLink(data.downloadUrl);
+        setQrCodeData(data.downloadUrl);
         setShowSuccess(true);
         toast.success('File uploaded successfully!');
       } else {
